@@ -1,0 +1,31 @@
+name = "illegal-dumping-map"
+compatibility_date = "2024-09-23"
+
+[vars]
+CITY_SLUG = "mar-del-plata"
+CITY_NAME = "Mar del Plata"
+CITY_CENTER_LAT = "-38.0055"
+CITY_CENTER_LNG = "-57.5426"
+CITY_DEFAULT_ZOOM = "12"
+CITY_AREA_MIN_LAT = "-38.20"
+CITY_AREA_MAX_LAT = "-37.88"
+CITY_AREA_MIN_LNG = "-57.70"
+CITY_AREA_MAX_LNG = "-57.47"
+# Turnstile test keys — always passes without widget in local dev
+TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
+
+# Secrets (set in Cloudflare dashboard in production):
+# SESSION_SECRET, TURNSTILE_SECRET, HMAC_SECRET
+
+[[d1_databases]]
+binding = "DB"
+database_name = "illegal-dumping-map"
+database_id = "local"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "illegal-dumping-map"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "local"
