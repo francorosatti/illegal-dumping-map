@@ -35,7 +35,7 @@ export const PATCH: RequestHandler = async ({ params, request, platform }) => {
 
 	if ('status' in body) {
 		const s = body.status as ReportStatus;
-		if (!['reported', 'confirmed', 'cleaned'].includes(s)) throw error(400, 'Estado inválido');
+		if (!['reported', 'confirmed', 'cleaned', 'rejected'].includes(s)) throw error(400, 'Estado inválido');
 		await updateReportStatus(env.DB, params.id, s);
 	}
 

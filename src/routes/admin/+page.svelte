@@ -19,7 +19,7 @@
 		photos: Photo[];
 	};
 
-	let queue = $state(untrack(() => (data.reports as Report[]).filter((r) => !r.reviewed_at)));
+	let queue = $state(untrack(() => (data.reports as Report[]).filter((r) => r.status === 'reported')));
 	let index = $state(0);
 	let actionError = $state('');
 	let submitting = $state(false);

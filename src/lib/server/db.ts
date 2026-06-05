@@ -280,7 +280,7 @@ export async function reviewReport(
 	} else {
 		await db
 			.prepare(
-				"UPDATE reports SET hidden = 1, reviewed_at = COALESCE(reviewed_at, datetime('now')), updated_at = datetime('now') WHERE id = ?"
+				"UPDATE reports SET status = 'rejected', hidden = 1, reviewed_at = COALESCE(reviewed_at, datetime('now')), updated_at = datetime('now') WHERE id = ?"
 			)
 			.bind(id)
 			.run();

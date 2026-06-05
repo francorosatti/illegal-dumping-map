@@ -4,10 +4,10 @@ export const es = {
 	appDescription: 'Reportá basura ilegal en tu ciudad',
 
 	// Report form (/)
-	reportTitle: 'Reportar basura ilegal',
+	reportTitle: 'Reportar Microbasural',
 	reportSubtitle: 'Tu reporte es anónimo y aparecerá en el mapa de inmediato.',
 	locationLabel: 'Ubicación',
-	locationHelp: 'Usá tu ubicación o marcá en el mapa.',
+	locationHelp: 'Usá tu ubicación o elegí en el mapa.',
 	locationUseGps: 'Usar mi ubicación',
 	locationPickMap: 'Elegir en el mapa',
 	locationOutsideArea: (city: string) =>
@@ -15,7 +15,7 @@ export const es = {
 	locationGpsError: 'No se pudo obtener tu ubicación. Elegí el punto en el mapa.',
 	locationRequired: 'Seleccioná una ubicación antes de enviar.',
 
-	photosLabel: 'Fotos (mín. 1, máx. 5)',
+	photosLabel: 'Fotos (hasta 5)',
 	photosHelp: 'Las fotos son privadas hasta que un moderador las apruebe.',
 	photosRequired: 'Agregá al menos una foto antes de enviar.',
 	photosAdd: 'Agregar fotos',
@@ -24,7 +24,7 @@ export const es = {
 	photosCompressing: 'Comprimiendo...',
 
 	descriptionLabel: 'Descripción (opcional)',
-	descriptionPlaceholder: 'Describí el problema: tipo de basura, cantidad, etc.',
+	descriptionPlaceholder: 'Describí el problema o cualquier detalle relevante.',
 	descriptionHelp: 'La descripción es privada hasta que un moderador la apruebe.',
 
 	turnstileLabel: 'Verificación anti-spam',
