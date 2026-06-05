@@ -37,3 +37,16 @@ CREATE TABLE IF NOT EXISTS photos (
 );
 
 CREATE INDEX IF NOT EXISTS idx_photos_report ON photos(report_id);
+
+CREATE TABLE IF NOT EXISTS cleaning_reports (
+  id TEXT PRIMARY KEY,
+  report_id TEXT NOT NULL REFERENCES reports(id),
+  r2_key TEXT NOT NULL,
+  is_photo_public INTEGER NOT NULL DEFAULT 0,
+  reviewed_at TEXT,
+  rejected INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_cleaning_report ON cleaning_reports(report_id, reviewed_at);
+CREATE INDEX IF NOT EXISTS idx_cleaning_created ON cleaning_reports(created_at);

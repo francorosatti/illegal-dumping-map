@@ -180,6 +180,11 @@
 			return;
 		}
 
+		if (photos.length === 0) {
+			submitError = es.photosRequired;
+			return;
+		}
+
 		submitting = true;
 
 		// Get Turnstile token

@@ -151,6 +151,7 @@
 <div class="header">
 	<h1>{es.adminTitle}</h1>
 	<div class="header-actions">
+		<a href="/admin/limpiezas" class="btn-sm">{es.adminCleaningsLink}</a>
 		<a href="/api/admin/export.csv" class="btn-sm">{es.adminExportCsv}</a>
 		<button class="btn-sm btn-danger" onclick={logout}>{es.adminLogout}</button>
 	</div>

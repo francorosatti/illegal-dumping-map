@@ -29,3 +29,7 @@ export async function checkReportRateLimit(kv: KVNamespace, ip: string): Promise
 export async function checkPhotoRateLimit(kv: KVNamespace, ip: string): Promise<boolean> {
 	return checkLimit(kv, ipKey('photo', ip), PHOTO_LIMIT, PHOTO_WINDOW_S);
 }
+
+export async function checkCleaningRateLimit(kv: KVNamespace, ip: string): Promise<boolean> {
+	return checkLimit(kv, ipKey('cleaning', ip), REPORT_LIMIT, REPORT_WINDOW_S);
+}

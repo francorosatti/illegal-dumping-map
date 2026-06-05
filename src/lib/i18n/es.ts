@@ -15,8 +15,9 @@ export const es = {
 	locationGpsError: 'No se pudo obtener tu ubicación. Elegí el punto en el mapa.',
 	locationRequired: 'Seleccioná una ubicación antes de enviar.',
 
-	photosLabel: 'Fotos (opcional, máx. 5)',
+	photosLabel: 'Fotos (mín. 1, máx. 5)',
 	photosHelp: 'Las fotos son privadas hasta que un moderador las apruebe.',
+	photosRequired: 'Agregá al menos una foto antes de enviar.',
 	photosAdd: 'Agregar fotos',
 	photosMaxReached: 'Máximo 5 fotos por reporte.',
 	photosInvalidType: 'Solo se aceptan imágenes (JPEG, PNG, WebP).',
@@ -90,6 +91,26 @@ export const es = {
 	adminActionDone: 'Acción realizada.',
 	adminAllDone: '¡Todo al día! No hay reportes pendientes.',
 	adminPending: (n: number) => (n === 1 ? '1 pendiente' : `${n} pendientes`),
+
+	// Cleaning report (map popup modal)
+	cleaningButton: 'Reportar que fue limpiado',
+	cleaningModalTitle: 'Reportar limpieza',
+	cleaningModalSubtitle: 'Tu reporte es anónimo y será revisado por un moderador.',
+	cleaningPhotoLabel: 'Foto del lugar limpio',
+	cleaningPhotoRequired: 'La foto es obligatoria.',
+	cleaningSubmitButton: 'Enviar',
+	cleaningSuccess: '¡Gracias! Tu reporte fue enviado y será revisado.',
+	cleaningAlreadyPending: 'Ya hay un reporte de limpieza pendiente para este basural.',
+	errorCleaningNotAllowed: 'No se puede reportar limpieza para este reporte.',
+
+	// Admin cleaning queue
+	adminCleaningsTitle: 'Limpiezas reportadas',
+	adminCleaningsLink: 'Revisar limpiezas',
+	adminCleaningsAllDone: '¡Todo al día! No hay limpiezas pendientes.',
+	adminCleaningOriginalReport: 'Reporte original',
+	adminCleaningPhoto: 'Foto de limpieza',
+	adminCleaningApprove: 'Confirmar limpieza',
+	adminCleaningReject: 'Rechazar',
 
 	// Status labels
 	statusReported: 'Reportado',

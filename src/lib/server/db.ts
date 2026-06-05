@@ -77,7 +77,7 @@ export async function getPublicPins(
 	const result = await db
 		.prepare(
 			`SELECT id, lat, lng, status, created_at FROM reports
-       WHERE hidden = 0 AND merged_into IS NULL
+       WHERE hidden = 0 AND merged_into IS NULL AND status != 'cleaned'
          AND lat >= ? AND lat <= ? AND lng >= ? AND lng <= ?
        ORDER BY created_at DESC LIMIT 500`
 		)
@@ -283,6 +283,126 @@ export async function reviewReport(
 				"UPDATE reports SET hidden = 1, reviewed_at = COALESCE(reviewed_at, datetime('now')), updated_at = datetime('now') WHERE id = ?"
 			)
 			.bind(id)
+			.run();
+	}
+}
+
+export type CleaningReport = {
+	id: string;
+	report_id: string;
+	r2_key: string;
+	is_photo_public: number;
+	reviewed_at: string | null;
+	rejected: number;
+	created_at: string;
+};
+
+export async function insertCleaningReport(
+	db: D1Database,
+	row: CleaningReport
+): Promise<void> {
+	await db
+		.prepare(
+			'INSERT INTO cleaning_reports (id, report_id, r2_key, is_photo_public, reviewed_at, rejected, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+		)
+		.bind(row.id, row.report_id, row.r2_key, row.is_photo_public, row.reviewed_at, row.rejected, row.created_at)
+		.run();
+}
+
+export async function getPendingCleaningByReport(
+	db: D1Database,
+	reportId: string
+): Promise<CleaningReport | null> {
+	return db
+		.prepare('SELECT * FROM cleaning_reports WHERE report_id = ? AND reviewed_at IS NULL LIMIT 1')
+		.bind(reportId)
+		.first<CleaningReport>();
+}
+
+export async function getCleaningReport(
+	db: D1Database,
+	id: string
+): Promise<CleaningReport | null> {
+	return db.prepare('SELECT * FROM cleaning_reports WHERE id = ?').bind(id).first<CleaningReport>();
+}
+
+export async function listPendingCleaningReports(
+	db: D1Database
+): Promise<(CleaningReport & { report: Report })[]> {
+	const result = await db
+		.prepare(
+			`SELECT cr.*, r.id as r_id, r.lat, r.lng, r.description, r.description_approved,
+              r.status, r.hidden, r.reviewed_at as r_reviewed_at, r.merged_into,
+              r.created_at as r_created_at, r.updated_at
+       FROM cleaning_reports cr
+       JOIN reports r ON r.id = cr.report_id
+       WHERE cr.reviewed_at IS NULL
+       ORDER BY cr.created_at ASC
+       LIMIT 50`
+		)
+		.all<
+			CleaningReport & {
+				r_id: string;
+				lat: number;
+				lng: number;
+				description: string | null;
+				description_approved: number;
+				status: ReportStatus;
+				hidden: number;
+				r_reviewed_at: string | null;
+				merged_into: string | null;
+				r_created_at: string;
+				updated_at: string;
+			}
+		>();
+	return result.results.map((row) => ({
+		id: row.id,
+		report_id: row.report_id,
+		r2_key: row.r2_key,
+		is_photo_public: row.is_photo_public,
+		reviewed_at: row.reviewed_at,
+		rejected: row.rejected,
+		created_at: row.created_at,
+		report: {
+			id: row.r_id,
+			lat: row.lat,
+			lng: row.lng,
+			description: row.description,
+			description_approved: row.description_approved,
+			status: row.status,
+			hidden: row.hidden,
+			reviewed_at: row.r_reviewed_at,
+			merged_into: row.merged_into,
+			created_at: row.r_created_at,
+			updated_at: row.updated_at,
+		},
+	}));
+}
+
+export async function reviewCleaningReport(
+	db: D1Database,
+	id: string,
+	reportId: string,
+	approved: boolean
+): Promise<void> {
+	const now = new Date().toISOString();
+	if (approved) {
+		await db.batch([
+			db
+				.prepare(
+					"UPDATE cleaning_reports SET reviewed_at = ?, rejected = 0, is_photo_public = 1 WHERE id = ?"
+				)
+				.bind(now, id),
+			db
+				.prepare(
+					"UPDATE reports SET status = 'cleaned', updated_at = ? WHERE id = ?"
+				)
+				.bind(now, reportId),
+		]);
+	} else {
+		await db
+			.prepare("UPDATE cleaning_reports SET reviewed_at = ?, rejected = 1 WHERE id = ?")
+			.bind(now, id)
 			.run();
 	}
 }
