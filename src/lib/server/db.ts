@@ -77,7 +77,7 @@ export async function getPublicPins(
 	const result = await db
 		.prepare(
 			`SELECT id, lat, lng, status, created_at FROM reports
-       WHERE hidden = 0 AND merged_into IS NULL AND status != 'cleaned'
+       WHERE hidden = 0 AND merged_into IS NULL
          AND lat >= ? AND lat <= ? AND lng >= ? AND lng <= ?
        ORDER BY created_at DESC LIMIT 500`
 		)
