@@ -34,13 +34,13 @@
 
 	onMount(async () => {
 		if (!mapDiv) return;
+		const L = await import('leaflet');
+		await import('leaflet/dist/leaflet.css');
 		await Promise.all([
-			import('leaflet/dist/leaflet.css'),
 			import('leaflet.markercluster/dist/MarkerCluster.css'),
 			import('leaflet.markercluster/dist/MarkerCluster.Default.css'),
 			import('leaflet.markercluster'),
 		]);
-		const L = await import('leaflet');
 
 		// Fix default icon paths for bundled Leaflet
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any

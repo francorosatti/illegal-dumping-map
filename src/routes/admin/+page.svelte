@@ -23,6 +23,7 @@
 	let actionError = $state('');
 	let mergeTargetId = $state('');
 	let mergingId = $state('');
+	let lightboxSrc = $state<string | null>(null);
 
 	async function logout() {
 		await fetch('/api/admin/logout', { method: 'POST' });
@@ -62,6 +63,25 @@
 		const res = await fetch(`/api/admin/photos/${id}`, { method: 'DELETE' });
 		if (!res.ok) actionError = es.errorGeneric;
 		else await invalidateAll();
+	}
+
+	async function approveAll(report: Report) {
+		actionError = '';
+		await Promise.all([
+			fetch(`/api/admin/reports/${report.id}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ description_approved: true, status: 'confirmed' }),
+			}),
+			...report.photos.map((p) =>
+				fetch(`/api/admin/photos/${p.id}`, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ is_public: true }),
+				})
+			),
+		]);
+		await invalidateAll();
 	}
 
 	async function mergeReport(sourceId: string) {
@@ -104,15 +124,26 @@
 				{/if}
 			</div>
 
+			<!-- Approve all -->
+			{#if report.status === 'reported'}
+				<div class="btn-row">
+					<button class="btn-sm btn-green" onclick={() => approveAll(report)}>✓ Aprobar todo</button>
+				</div>
+			{:else if report.status === 'confirmed'}
+				<div class="btn-row">
+					<button class="btn-sm btn-green" onclick={() => patchReport(report.id, { status: 'cleaned' })}>✓ Marcar como limpio</button>
+				</div>
+			{/if}
+
 			<!-- Description -->
 			<div class="desc-section">
 				{#if report.description}
-					<p class="desc">{report.description}</p>
+					<p class="desc" class:approved={report.description_approved}>{report.description}</p>
 					<div class="btn-row">
-						{#if !report.description_approved}
-							<button class="btn-sm btn-green" onclick={() => patchReport(report.id, { description_approved: true })}>{es.adminApproveDesc}</button>
+						{#if report.description_approved}
+							<button class="btn-sm" onclick={() => patchReport(report.id, { description_approved: false })}>Ocultar descripción</button>
 						{:else}
-							<button class="btn-sm" onclick={() => patchReport(report.id, { description_approved: false })}>{es.adminRejectDesc}</button>
+							<button class="btn-sm btn-green" onclick={() => patchReport(report.id, { description_approved: true })}>Mostrar descripción</button>
 						{/if}
 					</div>
 				{:else}
@@ -125,12 +156,17 @@
 				<div class="photos">
 					{#each report.photos as photo (photo.id)}
 						<div class="photo-item">
-							<img src="/api/img/{photo.id}" alt="Foto" />
+							<button type="button" class="photo-btn" onclick={() => lightboxSrc = `/api/img/${photo.id}`}>
+								<img src="/api/img/{photo.id}" alt="Foto" />
+								{#if photo.is_public}
+									<span class="pub-badge">público</span>
+								{/if}
+							</button>
 							<div class="photo-actions">
-								{#if !photo.is_public}
-									<button class="btn-sm btn-green" onclick={() => patchPhoto(photo.id, true)}>{es.adminMakePhotoPublic}</button>
+								{#if photo.is_public}
+									<button class="btn-sm" onclick={() => patchPhoto(photo.id, false)}>Ocultar</button>
 								{:else}
-									<button class="btn-sm" onclick={() => patchPhoto(photo.id, false)}>Privar</button>
+									<button class="btn-sm btn-green" onclick={() => patchPhoto(photo.id, true)}>Mostrar</button>
 								{/if}
 								<button class="btn-sm btn-danger" onclick={() => deletePhoto(photo.id)}>{es.adminDeletePhoto}</button>
 							</div>
@@ -138,18 +174,6 @@
 					{/each}
 				</div>
 			{/if}
-
-			<!-- Status change -->
-			<div class="action-row">
-				<select
-					value={report.status}
-					onchange={(e) => patchReport(report.id, { status: (e.target as HTMLSelectElement).value })}
-				>
-					<option value="reported">{es.statusReported}</option>
-					<option value="confirmed">{es.statusConfirmed}</option>
-					<option value="cleaned">{es.statusCleaned}</option>
-				</select>
-			</div>
 
 			<!-- Merge -->
 			{#if mergingId === report.id}
@@ -166,6 +190,12 @@
 		</div>
 	{/each}
 </div>
+
+{#if lightboxSrc}
+	<button class="lightbox" onclick={() => lightboxSrc = null} aria-label="Cerrar">
+		<img src={lightboxSrc} alt="Foto ampliada" />
+	</button>
+{/if}
 
 <style>
 	.header {
@@ -242,6 +272,11 @@
 		font-size: 0.9rem;
 		margin-bottom: 0.5rem;
 		white-space: pre-wrap;
+		color: #999;
+	}
+
+	.desc.approved {
+		color: #222;
 	}
 
 	.empty-desc {
@@ -256,12 +291,35 @@
 		margin: 0.75rem 0;
 	}
 
+	.photo-btn {
+		position: relative;
+		display: block;
+		padding: 0;
+		border: none;
+		background: none;
+		cursor: zoom-in;
+		border-radius: 6px;
+		overflow: hidden;
+	}
+
 	.photo-item img {
-		width: 100px;
-		height: 100px;
+		width: 160px;
+		height: 160px;
 		object-fit: cover;
 		border-radius: 6px;
 		display: block;
+	}
+
+	.pub-badge {
+		position: absolute;
+		bottom: 4px;
+		left: 4px;
+		background: #27ae60;
+		color: #fff;
+		font-size: 0.65rem;
+		font-weight: 700;
+		padding: 0.1rem 0.35rem;
+		border-radius: 3px;
 	}
 
 	.photo-actions {
@@ -269,6 +327,26 @@
 		gap: 0.25rem;
 		margin-top: 0.25rem;
 		flex-wrap: wrap;
+	}
+
+	.lightbox {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.85);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		border: none;
+		cursor: zoom-out;
+		padding: 1rem;
+	}
+
+	.lightbox img {
+		max-width: 100%;
+		max-height: 90vh;
+		border-radius: 6px;
+		object-fit: contain;
 	}
 
 	.btn-row, .action-row, .merge-row {
@@ -298,13 +376,6 @@
 		background: #fde8e8;
 		border-color: #c0392b;
 		color: #c0392b;
-	}
-
-	select {
-		padding: 0.3rem 0.5rem;
-		font-size: 0.85rem;
-		border: 1px solid #ccc;
-		border-radius: 5px;
 	}
 
 	.merge-row input {

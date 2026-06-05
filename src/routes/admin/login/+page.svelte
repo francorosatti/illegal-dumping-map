@@ -6,6 +6,7 @@
 	let password = $state('');
 	let error = $state('');
 	let loading = $state(false);
+	let showPassword = $state(false);
 
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
@@ -37,7 +38,12 @@
 			<input id="email" type="email" bind:value={email} required autocomplete="email" />
 
 			<label for="password">{es.adminPassword}</label>
-			<input id="password" type="password" bind:value={password} required autocomplete="current-password" />
+			<div class="password-wrap">
+				<input id="password" type={showPassword ? 'text' : 'password'} bind:value={password} required autocomplete="current-password" />
+				<button type="button" class="toggle" onclick={() => showPassword = !showPassword}>
+					{showPassword ? 'Ocultar' : 'Mostrar'}
+				</button>
+			</div>
 
 			{#if error}
 				<p class="error">{error}</p>
@@ -90,6 +96,32 @@
 		border-radius: 6px;
 		font-size: 0.95rem;
 		margin-bottom: 1rem;
+	}
+
+	.password-wrap {
+		position: relative;
+		margin-bottom: 1rem;
+	}
+
+	.password-wrap input {
+		margin-bottom: 0;
+		padding-right: 5.5rem;
+	}
+
+	.toggle {
+		position: absolute;
+		right: 0.5rem;
+		top: 50%;
+		transform: translateY(-50%);
+		width: auto;
+		padding: 0.25rem 0.5rem;
+		background: none;
+		color: #1a6b3c;
+		border: none;
+		font-size: 0.8rem;
+		font-weight: 600;
+		cursor: pointer;
+		opacity: 1;
 	}
 
 	.error {

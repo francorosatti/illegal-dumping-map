@@ -145,7 +145,9 @@ export async function verifyUploaderToken(
 		const payload = decoded.slice(0, pipeIdx);
 		const sig = decoded.slice(pipeIdx + 1);
 		if (!(await verifyHmac(payload, sig, secret))) return false;
-		const [tokenReportId, tokenCreatedAt] = payload.split(':');
+		const sepIdx = payload.indexOf(':');
+		const tokenReportId = payload.slice(0, sepIdx);
+		const tokenCreatedAt = payload.slice(sepIdx + 1);
 		if (tokenReportId !== reportId || tokenCreatedAt !== reportCreatedAt) return false;
 		const created = new Date(reportCreatedAt).getTime();
 		if (Date.now() - created > UPLOADER_TTL_MS) return false;
