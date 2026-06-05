@@ -65,6 +65,7 @@ export const es = {
 	},
 	pinDate: (date: string) => `Reportado el ${date}`,
 	pinPhotoCount: (n: number) => (n === 1 ? '1 foto' : `${n} fotos`),
+	pinCleaningCount: (n: number) => n === 1 ? '1 persona reportó que fue limpiado.' : `${n} personas reportaron que fue limpiado.`,
 	pinDescriptionHidden: 'Descripción pendiente de revisión.',
 	pinPhotosHidden: 'Fotos pendientes de revisión.',
 

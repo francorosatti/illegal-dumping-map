@@ -25,6 +25,7 @@
 		description: string | null;
 		photos: { id: string }[];
 		has_pending_cleaning: boolean;
+		cleaning_count: number;
 	};
 
 	// Cleaning modal state
@@ -212,6 +213,10 @@
 			? `<p style="margin:0.5rem 0;font-size:0.85rem">${detail.description}</p>`
 			: `<p style="margin:0.5rem 0;font-size:0.8rem;color:#888">${detail.photos.length === 0 && !detail.description ? es.pinDescriptionHidden : ''}</p>`;
 
+		const cleaningCountHtml = detail.cleaning_count > 0
+			? `<p style="margin:0.5rem 0 0;font-size:0.78rem;color:#1a6b3c;font-weight:600">${es.pinCleaningCount(detail.cleaning_count)}</p>`
+			: '';
+
 		const showCleaningBtn = detail.status === 'confirmed' && !detail.has_pending_cleaning;
 		const cleaningBtnHtml = showCleaningBtn
 			? `<button
@@ -226,6 +231,7 @@
 				<p style="font-size:0.8rem;color:#666;margin:0.25rem 0">${dateLabel}</p>
 				${descHtml}
 				<div style="display:flex;flex-wrap:wrap;gap:4px">${photosHtml}</div>
+				${cleaningCountHtml}
 				${cleaningBtnHtml}
 			</div>`;
 

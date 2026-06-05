@@ -4,20 +4,20 @@ import { listPendingCleaningReports, getPhotosByReport } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ locals, platform }) => {
 	if (!locals.adminId) throw redirect(303, '/admin/login');
-	if (!platform) return { cleanings: [] };
+	if (!platform) return { groups: [] };
 
-	const rows = await listPendingCleaningReports(platform.env.DB);
+	const groups = await listPendingCleaningReports(platform.env.DB);
 	const withPhotos = await Promise.all(
-		rows.map(async (cr) => ({
-			...cr,
+		groups.map(async (g) => ({
+			...g,
 			report: {
-				...cr.report,
-				photos: (await getPhotosByReport(platform.env.DB, cr.report.id)).filter(
+				...g.report,
+				photos: (await getPhotosByReport(platform.env.DB, g.report.id)).filter(
 					(p) => p.is_public === 1
 				),
 			},
 		}))
 	);
 
-	return { cleanings: withPhotos };
+	return { groups: withPhotos };
 };

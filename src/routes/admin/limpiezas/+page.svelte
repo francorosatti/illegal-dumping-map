@@ -22,13 +22,13 @@
 		r2_key: string;
 		is_photo_public: number;
 		created_at: string;
-		report: Report;
 	};
+	type Group = { report: Report; cleanings: Cleaning[] };
 
-	let queue = $state(untrack(() => data.cleanings as Cleaning[]));
+	let queue = $state(untrack(() => data.groups as Group[]));
 	let index = $state(0);
 	let actionError = $state('');
-	let submitting = $state(false);
+	let submittingIds = $state(new Set<string>());
 	let lightboxSrc = $state<string | null>(null);
 	let mapModalOpen = $state(false);
 	let mapDiv = $state<HTMLDivElement | null>(null);
@@ -59,26 +59,38 @@
 	async function onPointerUp() {
 		if (!dragging) return;
 		dragging = false;
-		if (dragX > THRESHOLD) await decide(true);
-		else if (dragX < -THRESHOLD) await decide(false);
+		if (dragX > THRESHOLD) await decideAll(true);
+		else if (dragX < -THRESHOLD) await decideAll(false);
 		dragX = 0;
 	}
 
-	async function decide(approved: boolean) {
-		if (!current || submitting) return;
-		submitting = true;
+	async function decideCleaning(cleaningId: string, approved: boolean) {
+		if (submittingIds.has(cleaningId)) return;
 		actionError = '';
-		const res = await fetch(`/api/admin/cleaning/${current.id}`, {
+		submittingIds = new Set([...submittingIds, cleaningId]);
+		const res = await fetch(`/api/admin/cleaning/${cleaningId}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ approved }),
 		});
 		if (!res.ok) {
 			actionError = es.errorGeneric;
+			submittingIds = new Set([...submittingIds].filter((id) => id !== cleaningId));
 		} else {
-			index += 1;
+			// Remove this cleaning from the current group
+			queue = queue.map((g, i) =>
+				i === index ? { ...g, cleanings: g.cleanings.filter((c) => c.id !== cleaningId) } : g
+			);
+			submittingIds = new Set([...submittingIds].filter((id) => id !== cleaningId));
+			// If no cleanings left in this group, advance
+			if (queue[index]?.cleanings.length === 0) index += 1;
 		}
-		submitting = false;
+	}
+
+	async function decideAll(approved: boolean) {
+		if (!current) return;
+		const ids = current.cleanings.map((c) => c.id);
+		await Promise.all(ids.map((id) => decideCleaning(id, approved)));
 	}
 
 	async function logout() {
@@ -92,6 +104,7 @@
 	}
 
 	let swipeHint = $derived(dragX > 30 ? 'approve' : dragX < -30 ? 'reject' : null);
+	let anySubmitting = $derived(submittingIds.size > 0);
 
 	async function openMapModal() {
 		mapModalOpen = true;
@@ -128,8 +141,8 @@
 <svelte:window
 	onkeydown={(e) => {
 		if (lightboxSrc) { if (e.key === 'Escape') lightboxSrc = null; return; }
-		if (e.key === 'ArrowRight') decide(true);
-		if (e.key === 'ArrowLeft') decide(false);
+		if (e.key === 'ArrowRight') decideAll(true);
+		if (e.key === 'ArrowLeft') decideAll(false);
 	}}
 />
 
@@ -199,35 +212,53 @@
 				</div>
 			{/if}
 
-			<!-- Cleaning photo -->
-			<div class="section">
-				<div class="section-label">{es.adminCleaningPhoto}</div>
-				<div class="photos">
-					<button
-						type="button"
-						class="photo-btn"
-						onclick={() => (lightboxSrc = `/api/img/cleaning/${current.id}`)}
-					>
-						<img src="/api/img/cleaning/{current.id}" alt="Foto de limpieza" />
-					</button>
+			<!-- Cleaning photos (one per submission) -->
+			{#each current.cleanings as cleaning (cleaning.id)}
+				<div class="section cleaning-row">
+					<div class="cleaning-row-header">
+						<div class="section-label">{es.adminCleaningPhoto} · {es.dateFormat(cleaning.created_at)}</div>
+						<div class="cleaning-row-actions">
+							<button
+								class="row-btn reject-btn"
+								disabled={submittingIds.has(cleaning.id)}
+								onclick={() => decideCleaning(cleaning.id, false)}
+								aria-label={es.adminCleaningReject}
+							>✕</button>
+							<button
+								class="row-btn approve-btn"
+								disabled={submittingIds.has(cleaning.id)}
+								onclick={() => decideCleaning(cleaning.id, true)}
+								aria-label={es.adminCleaningApprove}
+							>✓</button>
+						</div>
+					</div>
+					<div class="photos">
+						<button
+							type="button"
+							class="photo-btn"
+							onclick={() => (lightboxSrc = `/api/img/cleaning/${cleaning.id}`)}
+						>
+							<img src="/api/img/cleaning/{cleaning.id}" alt="Foto de limpieza" />
+						</button>
+					</div>
 				</div>
-			</div>
+			{/each}
 		</div>
 
-		<!-- Action buttons -->
+		<!-- Action buttons (act on all cleanings in this group) -->
 		<div class="actions">
 			<button
 				class="action-btn reject-btn"
-				disabled={submitting}
-				onclick={() => decide(false)}
+				disabled={anySubmitting}
+				onclick={() => decideAll(false)}
 				aria-label={es.adminCleaningReject}
 			>
 				✕
 			</button>
 			<button
 				class="action-btn approve-btn"
-				disabled={submitting}
-				onclick={() => decide(true)}
+				disabled={anySubmitting}
+				onclick={() => decideAll(true)}
 				aria-label={es.adminCleaningApprove}
 			>
 				✓
@@ -417,6 +448,46 @@
 		margin-top: 1rem;
 		border-top: 1px solid #f0f0f0;
 		padding-top: 0.75rem;
+	}
+
+	.cleaning-row-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.5rem;
+	}
+
+	.cleaning-row-actions {
+		display: flex;
+		gap: 0.4rem;
+	}
+
+	.row-btn {
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		border: none;
+		font-size: 0.9rem;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.row-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.row-btn.reject-btn {
+		background: #fff;
+		color: #c0392b;
+		border: 2px solid #c0392b;
+	}
+
+	.row-btn.approve-btn {
+		background: #27ae60;
+		color: #fff;
 	}
 
 	.section-label {

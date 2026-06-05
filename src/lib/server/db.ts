@@ -1,6 +1,6 @@
 import type { D1Database } from '@cloudflare/workers-types';
 
-export type ReportStatus = 'reported' | 'confirmed' | 'cleaned';
+export type ReportStatus = 'reported' | 'confirmed' | 'cleaned' | 'rejected';
 
 export type Report = {
 	id: string;
@@ -319,6 +319,16 @@ export async function getPendingCleaningByReport(
 		.first<CleaningReport>();
 }
 
+export async function getApprovedCleaningCount(db: D1Database, reportId: string): Promise<number> {
+	const row = await db
+		.prepare(
+			'SELECT COUNT(*) as cnt FROM cleaning_reports WHERE report_id = ? AND reviewed_at IS NOT NULL AND rejected = 0'
+		)
+		.bind(reportId)
+		.first<{ cnt: number }>();
+	return row?.cnt ?? 0;
+}
+
 export async function getCleaningReport(
 	db: D1Database,
 	id: string
@@ -326,9 +336,14 @@ export async function getCleaningReport(
 	return db.prepare('SELECT * FROM cleaning_reports WHERE id = ?').bind(id).first<CleaningReport>();
 }
 
+export type GroupedCleaningReports = {
+	report: Report;
+	cleanings: CleaningReport[];
+};
+
 export async function listPendingCleaningReports(
 	db: D1Database
-): Promise<(CleaningReport & { report: Report })[]> {
+): Promise<GroupedCleaningReports[]> {
 	const result = await db
 		.prepare(
 			`SELECT cr.*, r.id as r_id, r.lat, r.lng, r.description, r.description_approved,
@@ -337,7 +352,7 @@ export async function listPendingCleaningReports(
        FROM cleaning_reports cr
        JOIN reports r ON r.id = cr.report_id
        WHERE cr.reviewed_at IS NULL
-       ORDER BY cr.created_at ASC
+       ORDER BY cr.report_id ASC, cr.created_at ASC
        LIMIT 50`
 		)
 		.all<
@@ -355,28 +370,38 @@ export async function listPendingCleaningReports(
 				updated_at: string;
 			}
 		>();
-	return result.results.map((row) => ({
-		id: row.id,
-		report_id: row.report_id,
-		r2_key: row.r2_key,
-		is_photo_public: row.is_photo_public,
-		reviewed_at: row.reviewed_at,
-		rejected: row.rejected,
-		created_at: row.created_at,
-		report: {
-			id: row.r_id,
-			lat: row.lat,
-			lng: row.lng,
-			description: row.description,
-			description_approved: row.description_approved,
-			status: row.status,
-			hidden: row.hidden,
-			reviewed_at: row.r_reviewed_at,
-			merged_into: row.merged_into,
-			created_at: row.r_created_at,
-			updated_at: row.updated_at,
-		},
-	}));
+
+	const groups = new Map<string, GroupedCleaningReports>();
+	for (const row of result.results) {
+		if (!groups.has(row.report_id)) {
+			groups.set(row.report_id, {
+				report: {
+					id: row.r_id,
+					lat: row.lat,
+					lng: row.lng,
+					description: row.description,
+					description_approved: row.description_approved,
+					status: row.status,
+					hidden: row.hidden,
+					reviewed_at: row.r_reviewed_at,
+					merged_into: row.merged_into,
+					created_at: row.r_created_at,
+					updated_at: row.updated_at,
+				},
+				cleanings: [],
+			});
+		}
+		groups.get(row.report_id)!.cleanings.push({
+			id: row.id,
+			report_id: row.report_id,
+			r2_key: row.r2_key,
+			is_photo_public: row.is_photo_public,
+			reviewed_at: row.reviewed_at,
+			rejected: row.rejected,
+			created_at: row.created_at,
+		});
+	}
+	return Array.from(groups.values());
 }
 
 export async function reviewCleaningReport(
