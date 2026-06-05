@@ -8,6 +8,7 @@ import {
 	hideReport,
 	mergeReports,
 	deletePhotosByReports,
+	reviewReport,
 	type ReportStatus,
 } from '$lib/server/db';
 import { deletePhotos } from '$lib/server/r2';
@@ -40,6 +41,12 @@ export const PATCH: RequestHandler = async ({ params, request, platform }) => {
 
 	if ('description_approved' in body) {
 		await approveDescription(env.DB, params.id, Boolean(body.description_approved));
+	}
+
+	if (body.action === 'review') {
+		const photoApprovals = (body.photo_approvals ?? {}) as Record<string, boolean>;
+		await reviewReport(env.DB, params.id, Boolean(body.approved), Boolean(body.description_approved), photoApprovals);
+		return json({ ok: true });
 	}
 
 	if ('merge_into' in body && typeof body.merge_into === 'string') {

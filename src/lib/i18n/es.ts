@@ -81,16 +81,15 @@ export const es = {
 	adminExportCsv: 'Exportar CSV',
 
 	// Admin actions
+	adminApprove: 'Aprobar',
+	adminReject: 'Rechazar',
 	adminApproveDesc: 'Aprobar descripción',
 	adminRejectDesc: 'Rechazar descripción',
-	adminMakePhotoPublic: 'Hacer pública',
-	adminDeletePhoto: 'Eliminar foto',
-	adminDeleteReport: 'Eliminar reporte',
-	adminMergeReport: 'Fusionar con...',
-	adminSetStatus: 'Cambiar estado',
+	adminPhotoApproved: 'Aprobada',
+	adminPhotoRejected: 'Rechazada',
 	adminActionDone: 'Acción realizada.',
-	adminConfirmDelete: '¿Eliminar este reporte? Esta acción no se puede deshacer.',
-	adminConfirmDeletePhoto: '¿Eliminar esta foto? Se borrará permanentemente.',
+	adminAllDone: '¡Todo al día! No hay reportes pendientes.',
+	adminPending: (n: number) => (n === 1 ? '1 pendiente' : `${n} pendientes`),
 
 	// Status labels
 	statusReported: 'Reportado',

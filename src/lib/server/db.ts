@@ -259,6 +259,34 @@ export async function deletePhotosByReports(db: D1Database, reportIds: string[])
 	await db.prepare(`DELETE FROM photos WHERE report_id IN (${placeholders})`).bind(...reportIds).run();
 }
 
+export async function reviewReport(
+	db: D1Database,
+	id: string,
+	approved: boolean,
+	descriptionApproved: boolean,
+	photoApprovals: Record<string, boolean>
+): Promise<void> {
+	if (approved) {
+		await db
+			.prepare(
+				"UPDATE reports SET status = 'confirmed', description_approved = ?, reviewed_at = COALESCE(reviewed_at, datetime('now')), updated_at = datetime('now') WHERE id = ?"
+			)
+			.bind(descriptionApproved ? 1 : 0, id)
+			.run();
+		const stmts = Object.entries(photoApprovals).map(([photoId, isPublic]) =>
+			db.prepare('UPDATE photos SET is_public = ? WHERE id = ?').bind(isPublic ? 1 : 0, photoId)
+		);
+		if (stmts.length > 0) await db.batch(stmts);
+	} else {
+		await db
+			.prepare(
+				"UPDATE reports SET hidden = 1, reviewed_at = COALESCE(reviewed_at, datetime('now')), updated_at = datetime('now') WHERE id = ?"
+			)
+			.bind(id)
+			.run();
+	}
+}
+
 export async function exportAllReports(db: D1Database): Promise<
 	(Pick<Report, 'id' | 'created_at' | 'lat' | 'lng' | 'description' | 'status' | 'description_approved' | 'reviewed_at'> & {
 		photo_count: number;
